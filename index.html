@@ -1,0 +1,362 @@
+<html>
+	<head>
+		<title>Our music</title>
+		<meta name="viewport" content="width=device-width,height=device-height,initial-scale=1.0"/>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+		<style>
+			/*### Smartphones (portrait and landscape)(small)### */
+			@media screen and (min-width : 0px) and (max-width : 767px){
+				body {
+					margin: 0px;
+				}
+			}
+			body{
+				height: 100vh;
+				background: #ddd;
+			}
+			#playlist,audio{
+				background:#666;
+				max-width:800px;
+				padding:5%;
+				margin-top: 0px;
+				margin-bottom: 0px;
+			}
+			.active a{
+				color:#5DB0E6;
+				text-decoration:none;
+				background: #444;
+			}
+			li a{
+				color:#eeeedd;
+				background:#333;
+				padding:5px;
+				padding-left: 15px;
+				display:block;
+				text-decoration:none;
+			}
+			li a:hover{
+				text-decoration: underline;
+				background: #555;
+			}
+			ol, ul {
+				list-style: none;
+			}
+			#audio{
+				width: 100%;
+				padding: 0px;
+			}
+			#playlist{
+				max-height: 75%;
+				overflow: auto;
+				border-top: solid;
+			}
+			.audio-wrapper{
+				border: solid;
+				background:#666;
+				max-width:800px;
+				margin: auto;
+			}
+			#now-playing{
+				border-bottom: 2px solid black;
+				width: 95%;
+				#margin-left: 5%;
+				padding-left: 5%;
+				padding-top: 10px;
+				padding-bottom: 10px;
+				color: #eeeedd;
+			}
+			#player{
+				width: 88%;
+				margin-left: 5%;
+				max-width: 800px;
+				border: solid;
+				margin-bottom: 10px;
+				margin-top: 10px;
+				background: #444;
+			}
+			#extra-controls{
+				height: 25px;
+				background: #fafafa;
+				width: 98%;
+				padding-right: 2%;
+				min-width: 105px;
+			}
+			#previous{
+				background: url(images/previous.png);
+			}
+			#next{
+				background: url(images/next.png);
+			}
+			#shuffle{
+				background: url(images/shuffle-icon.png);
+			}
+			#toggle-playlist{
+				background: url(images/playlist.png);
+			}
+			.icon{
+				display: inline-block;
+				background-size: cover !important;
+				width: 18px;
+				height: 18px;
+			}
+			#extra-controls div:active, .shuffle{
+				box-shadow: inset 0px 0px 9px 0px #efefef;
+				border: thin solid gray;
+				margin-top: -2px;
+				margin-bottom: -2px;
+				margin-right: -2px;
+			}
+			.shuffle, .show{
+				background-color: #cff !important;
+			}
+			#toggle-playlist{
+				float: right;
+			}
+			.show{
+				box-shadow: inset 0px 0px 9px 0px #efefef;
+				border: thin solid gray;
+				margin-right: -1px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="audio-wrapper">
+			<div id="player">
+				<div id="now-playing">
+					<p id="now-playing-title"></p>
+				</div>
+				<audio id="audio" tabindex="0" controls type="audio/mpeg">
+					<source type="audio/mp3">
+					Sorry, your browser does not support HTML5 audio.
+				</audio>
+				<div id="extra-controls">
+					<span id="control-spacer">&nbsp;</span>
+					<div id="previous" class="icon" title="Previous song"></div>
+					<span id="control-spacer">&nbsp;</span>
+					<div id="next" class="icon" title="Next song"></div>
+					<span id="control-spacer">&nbsp;</span>
+					<div id="shuffle" class="icon" title="Shuffle"></div>
+					<div id="toggle-playlist" class="show icon" title="Toggle playlist"></div>
+				</div>
+			</div>
+
+			<ul id="playlist">
+				<!--
+				<li class="active"><a href="http://www.archive.org/download/bolero_69/Bolero.mp3">Ravel Bolero</a></li>
+				<li><a href="http://www.archive.org/download/MoonlightSonata_755/Beethoven-MoonlightSonata.mp3">Moonlight Sonata - Beethoven</a></li>
+				<li><a href="http://www.archive.org/download/CanonInD_261/CanoninD.mp3">Canon in D Pachabel</a></li>
+				<li><a href="http://www.archive.org/download/PatrikbkarlChamberSymph/PatrikbkarlChamberSymph_vbr_mp3.zip">patrikbkarl chamber sy</a></li>
+				-->
+			</ul>
+		</div>
+
+		<script type="text/javascript">
+
+			var audio;
+			var playlist;
+			var tracks;
+			var current;
+			var shuffle = false;
+			var shuffledList = [];
+			var songs = [];
+
+			// jQuery.ready()
+			$(function() {
+/*
+				//songs = ["songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3"];
+songs = ["songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3"];
+				init();
+*/
+
+				$.get('songList.php', function(data) {
+					// you should now have a json encoded PHP array
+					songs = data;
+					init();
+				}, 'json');
+
+			});
+
+			function init(){
+
+				playlist = $('#playlist');
+				audio = $('audio');
+
+				var first = true;
+				for (var s in songs) {
+					var li = document.createElement("li");
+					var a = document.createElement("a");
+					var song = songs[s];
+					//var title = ( parseInt(s) + 1 ) + ". " + song.substring(song.indexOf("/") + 1, song.indexOf(".") );
+					var title = song.substring(song.indexOf("/") + 1, song.indexOf(".") );
+					a.innerHTML = title;
+					a.href = songs[s];
+					li.appendChild(a);
+					playlist.append(li);
+
+					if( first ){
+						audio[0].src = song;
+						li.setAttribute("class", "active");
+						$("#now-playing-title").html(title);
+					}
+
+					first = false;
+				} 
+
+				buildShuffledList();
+				current = 0;
+				tracks = playlist.find('li a');
+				len = tracks.length - 1;
+				//audio[0].volume = .10;
+				
+				playlist.find('a').click(function(e){
+					e.preventDefault();
+					link = $(this);
+					if( !link.parent().hasClass("active") ){
+						current = link.parent().index();
+						run(link, audio[0]);
+					}
+					// If the active song was clicked don't reload the song. Just play/pause.
+					else{
+						audio[0].paused ? audio[0].play() : audio[0].pause();
+					}
+				});
+
+				audio[0].addEventListener('ended',function(e){
+					playNext();
+				});
+
+				$("#next").click( playNext );
+				$("#previous").click( playPrevious );
+				$("#shuffle").click( function(e){ 
+					$(this).toggleClass("shuffle");
+					shuffle ? shuffle = false : shuffle = true;
+				});
+				$("#toggle-playlist").click( function(e){ 
+					$(this).toggleClass("show");
+					if( $(this).hasClass("show") ){
+						$("#playlist").slideDown();
+					}
+					else{
+						$("#playlist").slideUp();
+					}
+				});
+
+				$(document).keydown(function(evt) {
+					if (evt.keyCode == 32) {
+						evt.preventDefault();
+						audio[0].paused ? audio[0].play() : audio[0].pause();
+					}
+				});
+			}
+
+			function playNext(){
+				if( shuffle ){
+					playShuffle();
+					return;
+				}
+				current++;
+				if(current > len){
+					current = 0;
+					link = playlist.find('a')[0];
+				}
+				else{
+					link = playlist.find('a')[current];    
+				}
+				run($(link),audio[0]);
+			}
+
+			function playPrevious(){
+				if( shuffle ){
+					playShufflePrevious();
+					return;
+				}
+				current--;
+				if(current < 0){
+					current = len;
+				}
+				link = playlist.find('a')[current];
+				run($(link),audio[0]);
+			}
+
+			/**
+			  * Find the index of the current song in the shuffled play list and play the next song
+			  *  from the shuffled list.
+			  * If the current song is not found start at the beginning of the shuffled list.
+			  */
+			function playShuffle(){
+				var currentShuffleIndex = $.inArray( $("#playlist li.active a")[0], shuffledList );
+				if( currentShuffleIndex < 0 ){
+					currentShuffleIndex = -1;
+				}
+
+				currentShuffleIndex++;
+				if(currentShuffleIndex > len){
+					currentShuffleIndex = 0;
+				}
+
+				shuffledList[currentShuffleIndex].click();
+			}
+
+			/**
+			  * Find the index of the current song in the shuffled play list and play the previous song
+			  *  from the shuffled list.
+			  * If the current song is not found start at the beginning of the shuffled list.
+			  */
+			function playShufflePrevious(){
+				var currentShuffleIndex = $.inArray( $("#playlist li.active a")[0], shuffledList );
+
+				if( currentShuffleIndex < 0 ){
+					playShuffle();
+					return;
+				}
+
+				currentShuffleIndex--;
+				if(currentShuffleIndex < 0){
+					currentShuffleIndex = len;
+				}
+
+				shuffledList[currentShuffleIndex].click();
+			}
+
+			/**
+			  * Add each song's 'a' element to the shuffledList and randomize the list.
+			  */
+			function buildShuffledList(){
+				shuffledList=[];
+				var songName;
+				$("#playlist li a").each( function(){
+					if( $.inArray( this, shuffledList ) < 0 ){
+						shuffledList.push( this );
+					}
+				});
+
+				var currentIndex = shuffledList.length, temporaryValue, randomIndex;
+
+				// While there remain elements to shuffle...
+				while (0 !== currentIndex) {
+
+					// Pick a remaining element...
+					randomIndex = Math.floor(Math.random() * currentIndex);
+					currentIndex -= 1;
+
+					// And swap it with the current element.
+					temporaryValue = shuffledList[currentIndex];
+					shuffledList[currentIndex] = shuffledList[randomIndex];
+					shuffledList[randomIndex] = temporaryValue;
+				}
+			}
+
+			function run(link, player){
+				link.focus();
+				link.blur();
+				player.src = link.attr('href');
+				par = link.parent();
+				par.addClass('active').siblings().removeClass('active');
+				$("#now-playing-title").html( link.html() );
+				audio[0].load();
+				audio[0].play();
+			}
+
+		</script>
+	</body>
+</html>
