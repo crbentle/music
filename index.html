@@ -13,11 +13,11 @@
 			body{
 				height: 100vh;
 				background: #ddd;
+				margin: 0px;
 			}
 			#playlist,audio{
 				background:#666;
 				max-width:800px;
-				padding:5%;
 				margin-top: 0px;
 				margin-bottom: 0px;
 			}
@@ -46,9 +46,13 @@
 				padding: 0px;
 			}
 			#playlist{
-				max-height: 75%;
+				max-height: calc(100vh - 204px);
 				overflow: auto;
 				border-top: solid;
+				padding-left: 5%;
+				padding-right: 5%;
+				padding-top: 20px;
+				padding-bottom: 20px;
 			}
 			.audio-wrapper{
 				border: solid;
@@ -58,9 +62,7 @@
 			}
 			#now-playing{
 				border-bottom: 2px solid black;
-				width: 95%;
-				#margin-left: 5%;
-				padding-left: 5%;
+				margin-left: 5%;
 				padding-top: 10px;
 				padding-bottom: 10px;
 				color: #eeeedd;
@@ -77,8 +79,7 @@
 			#extra-controls{
 				height: 25px;
 				background: #fafafa;
-				width: 98%;
-				padding-right: 2%;
+				width: 100%;
 				min-width: 105px;
 			}
 			#previous{
@@ -98,6 +99,7 @@
 				background-size: cover !important;
 				width: 18px;
 				height: 18px;
+				margin-top: 3px;
 			}
 			#extra-controls div:active, .shuffle{
 				box-shadow: inset 0px 0px 9px 0px #efefef;
@@ -109,8 +111,9 @@
 			.shuffle, .show{
 				background-color: #cff !important;
 			}
-			#toggle-playlist{
+			#toggle-playlist, #toggle-playlist:active{
 				float: right;
+				margin-right: 2% !important;
 			}
 			.show{
 				box-shadow: inset 0px 0px 9px 0px #efefef;
@@ -181,6 +184,9 @@ songs = ["songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/M
 				playlist = $('#playlist');
 				audio = $('audio');
 
+				// Check if a song name was passed in on the URL
+				var urlSong = getUrlVar("song");
+
 				var first = true;
 				for (var s in songs) {
 					var li = document.createElement("li");
@@ -198,12 +204,21 @@ songs = ["songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/M
 						li.setAttribute("class", "active");
 						$("#now-playing-title").html(title);
 					}
+					if( title == urlSong ){
+						urlSong = null;
+						run($(a), audio[0]);
+					}
 
 					first = false;
 				} 
 
 				buildShuffledList();
-				current = 0;
+				// Set the current index to the active song. This might not be the first song if a song parameter was passed in
+				current = playlist.find("li").index($(".active"));
+				// If we can't find an active song set the current index to the first song
+				if( current < 0 ){
+					current = 0;
+				}
 				tracks = playlist.find('li a');
 				len = tracks.length - 1;
 				//audio[0].volume = .10;
@@ -252,30 +267,29 @@ songs = ["songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/M
 			function playNext(){
 				if( shuffle ){
 					playShuffle();
-					return;
-				}
-				current++;
-				if(current > len){
-					current = 0;
-					link = playlist.find('a')[0];
 				}
 				else{
-					link = playlist.find('a')[current];    
+					current++;
+					if(current > len){
+						current = 0;
+					}
+					link = playlist.find('a')[current];   
+					run($(link),audio[0]);
 				}
-				run($(link),audio[0]);
 			}
 
 			function playPrevious(){
 				if( shuffle ){
 					playShufflePrevious();
-					return;
 				}
-				current--;
-				if(current < 0){
-					current = len;
+				else{
+					current--;
+					if(current < 0){
+						current = len;
+					}
+					link = playlist.find('a')[current];
+					run($(link),audio[0]);
 				}
-				link = playlist.find('a')[current];
-				run($(link),audio[0]);
 			}
 
 			/**
@@ -285,9 +299,6 @@ songs = ["songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/M
 			  */
 			function playShuffle(){
 				var currentShuffleIndex = $.inArray( $("#playlist li.active a")[0], shuffledList );
-				if( currentShuffleIndex < 0 ){
-					currentShuffleIndex = -1;
-				}
 
 				currentShuffleIndex++;
 				if(currentShuffleIndex > len){
@@ -355,6 +366,11 @@ songs = ["songs/Mad World.mp3", "songs/Thank You.mp3", "songs/High.mp3","songs/M
 				$("#now-playing-title").html( link.html() );
 				audio[0].load();
 				audio[0].play();
+			}
+
+			function getUrlVar(key){
+				var result = new RegExp(key + "=([^&]*)", "i").exec(window.location.search); 
+				return result && unescape(result[1]) || ""; 
 			}
 
 		</script>
